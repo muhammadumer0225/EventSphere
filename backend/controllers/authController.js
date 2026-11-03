@@ -108,7 +108,7 @@ const signin = async (req, res) => {
   },
   process.env.JWT_SECRET,
   {
-    expiresIn: "30s",
+    expiresIn: "1h", // Token expires in 1 hour
   }
 );
 
@@ -185,6 +185,18 @@ const getDashboard = async (req, res) => {
     user: {
       id: req.user.id,
       name : req.user.name,
+      email: req.user.email,
+      role: req.user.role,
+    },
+  });
+};
+
+const getExhibitorDashboard = (req, res) => {
+  res.status(200).json({
+    message: "Welcome to Exhibitor Dashboard",
+    user: {
+      id: req.user.id,
+      name: req.user.name,
       email: req.user.email,
       role: req.user.role,
     },
@@ -288,5 +300,109 @@ const logout = async (req, res) => {
   }
 }
 
+const forgotPassword = async (req, res) => {
+  try{
+    const { email } = req.body;
 
-module.exports = { signup, signin, getProfile , getAdminDashboard, getDashboard, refreshAccessToken, logout };
+    if (!email) {
+      return res.status(400).json({
+        message: "Email is required",
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    // Hash reset token
+    const resetTokenHash = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+
+      // Save hashed token and expiry
+    user.resetPasswordToken = resetTokenHash;
+    user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
+
+    await user.save();
+
+    return res.status(200).json({
+      message: "Password reset token generated successfully",
+      resetToken,
+    });
+
+  }catch(error){
+    return res.status(500).json({
+      message: "Something went wrong",
+    });
+  }
+}
+
+const resetPassword = async (req, res) => {
+  try {
+    const { resetToken, newPassword } = req.body;
+
+    if (!resetToken || !newPassword) {
+      return res.status(400).json({
+        message: "Reset token and new password are required",
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        message: "Password must be at least 8 characters long",
+      });
+    }
+
+    // Hash the received reset token
+    const resetTokenHash = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+
+    // Find user with valid, unexpired reset token
+    const user = await User.findOne({
+      resetPasswordToken: resetTokenHash,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        message: "Invalid or expired reset token",
+      });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    user.password = hashedPassword;
+
+    // Clear reset token after successful password change
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+
+    // Revoke existing refresh token
+    user.refreshTokenHash = null;
+
+    await user.save();
+
+    return res.status(200).json({
+      message: "Password reset successful",
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      message: "Something went wrong",
+    });
+  }
+};
+
+
+module.exports = { signup, signin, getProfile , getAdminDashboard, getDashboard,getExhibitorDashboard, refreshAccessToken, logout,forgotPassword, resetPassword };
