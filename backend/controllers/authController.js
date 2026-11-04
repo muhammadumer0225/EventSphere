@@ -108,7 +108,7 @@ const signin = async (req, res) => {
   },
   process.env.JWT_SECRET,
   {
-    expiresIn: "30s",
+    expiresIn: "1h", // Token expires in 1 hour
   }
 );
 
