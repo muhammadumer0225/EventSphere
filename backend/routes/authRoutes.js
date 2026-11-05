@@ -1,5 +1,5 @@
 const express = require("express");
-const { signup, signin, getProfile, getAdminDashboard, getDashboard, refreshAccessToken, logout } = require("../controllers/authController");
+const { signup, signin, getProfile, getAdminDashboard, getDashboard, refreshAccessToken, logout, getExhibitorDashboard, forgotPassword, resetPassword } = require("../controllers/authController");
 const { authMiddleware } = require("../middleware/authMiddleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
 
@@ -16,6 +16,13 @@ router.get(
 );
 
 router.get(
+  "/exhibitor",
+  authMiddleware,
+  roleMiddleware("exhibitor"),
+  getExhibitorDashboard
+);
+
+router.get(
   "/admin",
   authMiddleware,
   roleMiddleware("admin"),
@@ -24,5 +31,7 @@ router.get(
 
 router.post("/refresh", refreshAccessToken);
 router.post("/logout", logout);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 
 module.exports = router;

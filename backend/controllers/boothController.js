@@ -85,6 +85,27 @@ const booths = await Booth.find(filter).populate("expo");
   }
 };
 
+// Get My Reservations (Exhibitor Only)
+const getMyReservations = async (req, res) => {
+  try {
+    const booths = await Booth.find({
+      exhibitor: req.user.id,
+      status: "reserved",
+    }).populate("expo");
+
+    res.status(200).json({
+      success: true,
+      count: booths.length,
+      booths,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 // Get Single Booth
 const getBoothById = async (req, res) => {
   try {
@@ -261,4 +282,4 @@ const reserveBooth = async (req, res) => {
     });
   }
 };
-module.exports = { createBooth, getAllBooths, getBoothById, updateBooth, deleteBooth, reserveBooth };
+module.exports = { createBooth, getAllBooths, getBoothById, updateBooth, deleteBooth, reserveBooth, getMyReservations };

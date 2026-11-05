@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const { createBooth, getAllBooths, getBoothById, updateBooth, deleteBooth, reserveBooth } = require("../controllers/boothController");
+const { createBooth, getAllBooths, getBoothById, updateBooth, deleteBooth, reserveBooth, getMyReservations } = require("../controllers/boothController");
 
 const { authMiddleware } = require("../middleware/authMiddleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
@@ -27,6 +27,14 @@ router.post(
   authMiddleware,
   roleMiddleware("exhibitor"),
   reserveBooth
+);
+
+// Get My Reservations (Exhibitor Only)
+router.get(
+  "/my-reservations",
+  authMiddleware,
+  roleMiddleware("exhibitor"),
+  getMyReservations
 );
 
 
