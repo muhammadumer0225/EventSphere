@@ -3,6 +3,8 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 
+const transporter = require("../config/mailer");
+
 const signup = async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -333,16 +335,45 @@ const forgotPassword = async (req, res) => {
 
     await user.save();
 
-    return res.status(200).json({
-      message: "Password reset token generated successfully",
-      resetToken,
-    });
+    // Create password reset URL
+const resetURL = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
-  }catch(error){
+// Send password reset email
+await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "EventSphere - Password Reset Request",
+
+    text: `Click this link to reset your password: ${resetURL}`,
+
+    html: `
+        <h2>Password Reset Request</h2>
+        <p>You requested to reset your EventSphere password.</p>
+        <p>Click the button below to reset your password:</p>
+
+        <a href="${resetURL}"
+           style="background-color: #2563eb; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px;">
+           Reset Password
+        </a>
+
+        <p>This link will expire in 15 minutes.</p>
+        <p>If you did not request this, please ignore this email.</p>
+    `
+});
+
+return res.status(200).json({
+    success: true,
+    message: "Password reset link sent successfully"
+});
+
+  } catch(error){
+    console.error("Forgot Password Error:", error);
+
     return res.status(500).json({
-      message: "Something went wrong",
+        success: false,
+        message: "Something went wrong",
     });
-  }
+}
 }
 
 const resetPassword = async (req, res) => {
