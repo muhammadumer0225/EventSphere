@@ -1,6 +1,6 @@
 import { useState } from "react";
 import api from "../services/api";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useContext } from "react";
 
 import { AuthContext } from "../context/AuthContext";
@@ -90,6 +90,9 @@ return (
 
           <button type="submit">Login</button>
         </form>
+        <Link to="/forgot-password">
+  Forgot Password?
+</Link>
       </div>
     </div>
   );
