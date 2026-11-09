@@ -2,6 +2,7 @@ const express = require("express");
 const { signup, signin, getProfile, getAdminDashboard, getDashboard, refreshAccessToken, logout, getExhibitorDashboard, forgotPassword, resetPassword } = require("../controllers/authController");
 const { authMiddleware } = require("../middleware/authMiddleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
+const forgotPasswordLimiter = require("../middleware/forgotPasswordLimiter");
 
 const router = express.Router();
 
@@ -31,7 +32,7 @@ router.get(
 
 router.post("/refresh", refreshAccessToken);
 router.post("/logout", logout);
-router.post("/forgot-password", forgotPassword);
+router.post("/forgot-password", forgotPasswordLimiter, forgotPassword);
 router.post("/reset-password", resetPassword);
 
 module.exports = router;

@@ -41,7 +41,15 @@ function Login() {
       setUser(user);
 
       setMessage("Login successful!");
-      navigate("/dashboard");
+      const dashboardPaths = {
+  admin: "/admin/dashboard",
+  exhibitor: "/exhibitor/dashboard",
+  attendee: "/attendee/dashboard",
+};
+
+navigate(dashboardPaths[user.role] || "/dashboard", {
+  replace: true,
+});
 
       setFormData({
         email: "",
