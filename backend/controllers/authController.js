@@ -18,15 +18,15 @@ const signup = async (req, res) => {
 
     
 if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-  return res.status(400).json({
-    message: "Please enter a valid email address",
-  });
+    return res.status(400).json({
+        message: "Please enter a valid email address",
+    });
 }
 
-if (password.length < 8) {
-  return res.status(400).json({
-    message: "Password must be at least 8 characters long",
-  });
+if (typeof password !== "string" || password.length < 8) {
+    return res.status(400).json({
+        message: "Password must be at least 8 characters long",
+    });
 }
 
 
@@ -61,12 +61,14 @@ if (password.length < 8) {
         role: user.role,
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      message: "Something went wrong",
-      error: error.message,
+} catch (error) {
+    console.error("Signup Error:", error);
+
+    return res.status(500).json({
+        success: false,
+        message: "Something went wrong",
     });
-  }
+}
 }
 
 const signin = async (req, res) => {
@@ -79,13 +81,33 @@ const signin = async (req, res) => {
       });
     }
 
-     const user = await User.findOne({ email });
+if (
+    typeof email !== "string" ||
+    typeof password !== "string"
+) {
+    return res.status(400).json({
+        success: false,
+        message: "Invalid email or password format",
+    });
+}
 
-     if (!user) {
-      return res.status(404).json({
-        message: "User not found",
-      });
-    }
+const normalizedEmail = email.trim().toLowerCase();
+
+if (!normalizedEmail) {
+    return res.status(400).json({
+        success: false,
+        message: "Email is required",
+    });
+}
+
+     const user = await User.findOne({ email: normalizedEmail });
+
+if (!user) {
+    return res.status(401).json({
+        success: false,
+        message: "Invalid email or password",
+    });
+}
 
         // Check password
     const isPasswordCorrect = await bcrypt.compare(
@@ -122,6 +144,12 @@ const refreshTokenHash = crypto
   .digest("hex");
 
 user.refreshTokenHash = refreshTokenHash;
+
+// Refresh token expires after 7 days
+user.refreshTokenExpiresAt = new Date(
+    Date.now() + 7 * 24 * 60 * 60 * 1000
+);
+
 await user.save();
 
    res.status(200).json({
@@ -136,11 +164,13 @@ await user.save();
       },
     });
   } catch (error) {
-    res.status(500).json({
-      message: "Something went wrong",
-      error: error.message,
+    console.error("Signin Error:", error);
+
+    return res.status(500).json({
+        success: false,
+        message: "Something went wrong",
     });
-  }
+}
 }
 
 const getProfile = async (req, res) => {
@@ -220,13 +250,28 @@ const refreshAccessToken = async (req, res) => {
       .update(refreshToken)
       .digest("hex");
 
-    const user = await User.findOne({ refreshTokenHash });
+const user = await User.findOne({ refreshTokenHash });
 
-    if (!user) {
-      return res.status(401).json({
+if (!user) {
+    return res.status(401).json({
         message: "Invalid refresh token",
-      });
-    }
+    });
+}
+
+// Check refresh token expiry
+if (
+    !user.refreshTokenExpiresAt ||
+    user.refreshTokenExpiresAt <= new Date()
+) {
+    user.refreshTokenHash = null;
+    user.refreshTokenExpiresAt = null;
+
+    await user.save();
+
+    return res.status(401).json({
+        message: "Refresh token expired. Please login again.",
+    });
+}
 
     const token = jwt.sign(
       {
@@ -236,7 +281,7 @@ const refreshAccessToken = async (req, res) => {
         role: user.role,
       },
       process.env.JWT_SECRET,
-      { expiresIn: "30s" }
+      { expiresIn: "1h" }
     );
 
     // Generate a new refresh token
@@ -249,9 +294,14 @@ const refreshAccessToken = async (req, res) => {
       .update(newRefreshToken)
       .digest("hex");
 
-    // Replace the old stored hash
-    user.refreshTokenHash = newRefreshTokenHash;
-    await user.save();
+user.refreshTokenHash = newRefreshTokenHash;
+
+// Set new refresh token expiry to 7 days
+user.refreshTokenExpiresAt = new Date(
+    Date.now() + 7 * 24 * 60 * 60 * 1000
+);
+
+await user.save();
 
     return res.status(200).json({
       message: "Tokens refreshed successfully",
@@ -290,6 +340,7 @@ const logout = async (req, res) => {
     }
 
     user.refreshTokenHash = null;
+    user.refreshTokenExpiresAt = null;
     await user.save();
 
     return res.status(200).json({
@@ -315,9 +366,10 @@ const forgotPassword = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.status(404).json({
-        message: "User not found",
-      });
+return res.status(200).json({
+    success: true,
+    message: "If an account exists with this email, a reset link will be sent."
+});
     }
 
     // Generate reset token
@@ -339,31 +391,43 @@ const forgotPassword = async (req, res) => {
 const resetURL = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
 // Send password reset email
-await transporter.sendMail({
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: "EventSphere - Password Reset Request",
+try {
+    await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: "EventSphere - Password Reset Request",
 
-    text: `Click this link to reset your password: ${resetURL}`,
+        text: `Click this link to reset your password: ${resetURL}`,
 
-    html: `
-        <h2>Password Reset Request</h2>
-        <p>You requested to reset your EventSphere password.</p>
-        <p>Click the button below to reset your password:</p>
+        html: `
+            <h2>Password Reset Request</h2>
+            <p>You requested to reset your EventSphere password.</p>
+            <p>Click the button below to reset your password:</p>
 
-        <a href="${resetURL}"
-           style="background-color: #2563eb; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px;">
-           Reset Password
-        </a>
+            <a href="${resetURL}">
+                Reset Password
+            </a>
 
-        <p>This link will expire in 15 minutes.</p>
-        <p>If you did not request this, please ignore this email.</p>
-    `
-});
+            <p>This link will expire in 15 minutes.</p>
+            <p>If you did not request this, please ignore this email.</p>
+        `
+    });
+
+} catch (emailError) {
+
+    console.error("Email sending failed:", emailError);
+
+    user.resetPasswordToken = null;
+    user.resetPasswordExpires = null;
+
+    await user.save().catch((cleanupError) => {
+        console.error("Token cleanup failed:", cleanupError);
+    });
+}
 
 return res.status(200).json({
     success: true,
-    message: "Password reset link sent successfully"
+    message: "If an account exists with this email, a reset link will be sent."
 });
 
   } catch(error){
@@ -386,11 +450,21 @@ const resetPassword = async (req, res) => {
       });
     }
 
-    if (newPassword.length < 8) {
-      return res.status(400).json({
+    if (
+    typeof resetToken !== "string" ||
+    typeof newPassword !== "string"
+) {
+    return res.status(400).json({
+        success: false,
+        message: "Invalid reset request",
+    });
+}
+
+if (typeof newPassword !== "string" || newPassword.length < 8) {
+    return res.status(400).json({
         message: "Password must be at least 8 characters long",
-      });
-    }
+    });
+}
 
     // Hash the received reset token
     const resetTokenHash = crypto
@@ -421,6 +495,7 @@ const resetPassword = async (req, res) => {
 
     // Revoke existing refresh token
     user.refreshTokenHash = null;
+    user.refreshTokenExpiresAt = null;
 
     await user.save();
 
@@ -428,11 +503,14 @@ const resetPassword = async (req, res) => {
       message: "Password reset successful",
     });
 
-  } catch (error) {
+} catch (error) {
+    console.error("Reset Password Error:", error);
+
     return res.status(500).json({
-      message: "Something went wrong",
+        success: false,
+        message: "Something went wrong",
     });
-  }
+}
 };
 
 

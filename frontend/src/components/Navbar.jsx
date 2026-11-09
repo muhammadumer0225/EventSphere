@@ -8,6 +8,13 @@ function Navbar() {
   const { user, setUser } = useContext(AuthContext);
   const navigate = useNavigate();
 
+    // Dashboard mapping yahan add karo
+  const dashboardPaths = {
+    admin: "/admin/dashboard",
+    exhibitor: "/exhibitor/dashboard",
+    attendee: "/attendee/dashboard",
+  };
+
   const handleLogout = async () => {
     try {
       const refreshToken = localStorage.getItem("refreshToken");
@@ -38,6 +45,12 @@ function Navbar() {
 
       <div>
         <Link to="/">Home</Link>
+
+        {user && (
+  <Link to={dashboardPaths[user.role] || "/dashboard"}>
+    Dashboard
+  </Link>
+)}
 
         {!user ? (
           <>

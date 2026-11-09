@@ -27,10 +27,15 @@ const userSchema = new mongoose.Schema(
       default: "attendee",
     },
 
-    refreshTokenHash: {
-      type: String,
-      default: null,
-    },
+refreshTokenHash: {
+    type: String,
+    default: null,
+},
+
+refreshTokenExpiresAt: {
+    type: Date,
+    default: null,
+},
 
     resetPasswordToken: {
   type: String,

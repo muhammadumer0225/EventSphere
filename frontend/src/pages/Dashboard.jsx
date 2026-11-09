@@ -1,29 +1,23 @@
 import { useContext } from "react";
+import { Navigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
 
 function Dashboard() {
   const { user } = useContext(AuthContext);
-  const navigate = useNavigate();
 
-  const handleLogout = () => {
-  localStorage.removeItem("token");
-  localStorage.removeItem("refreshToken");
-  localStorage.removeItem("user");
+  const dashboardPaths = {
+    admin: "/admin/dashboard",
+    exhibitor: "/exhibitor/dashboard",
+    attendee: "/attendee/dashboard",
+  };
 
-  setUser(null);
+  const destination = dashboardPaths[user?.role];
 
-  navigate("/login");
-};
-  return (
-    <div>
-      <h1>Welcome to EventSphere Dashboard</h1>
-      <p>You have successfully logged in!</p>
-      <p>Welcome, {user?.name}</p>
-      <p>Your Role: {user?.role}</p>
-      <button onClick={handleLogout}>Logout</button>
-    </div>
-  );
+  if (!destination) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <Navigate to={destination} replace />;
 }
 
 export default Dashboard;
