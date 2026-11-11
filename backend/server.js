@@ -2,12 +2,13 @@ const mongoose = require("mongoose");
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+const path = require("path");
 
 const connectDB = require("./config/db")
 const authRoutes = require("./routes/authRoutes");
 const expoRoutes = require("./routes/expoRoutes");
 const boothRoutes = require("./routes/boothRoutes");
-
+const imageRoutes = require("./routes/imageRoutes");
 const app = express();
 
 // 1. CORS Middleware
@@ -28,6 +29,16 @@ app.use("/api/expos", expoRoutes);
 
 // 5. Booth Routes
 app.use("/api/booths", boothRoutes);
+
+// Image Upload Routes
+app.use("/api/images", imageRoutes);
+
+// Serve uploaded images
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "uploads"))
+);
+
 
 // Test route
 app.get("/", (req, res) => {
