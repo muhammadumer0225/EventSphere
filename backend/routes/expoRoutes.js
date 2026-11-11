@@ -1,3 +1,4 @@
+
 const express = require("express");
 const router = express.Router();
 
@@ -12,8 +13,29 @@ const {
 const { authMiddleware } = require("../middleware/authMiddleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
 
+// Admin: Get all Expos including drafts
+router.get(
+  "/manage",
+  authMiddleware,
+  roleMiddleware("admin"),
+  getAllExpos
+);
 
-// Create Expo (Admin only)
+// Admin: Get any Expo by ID including drafts
+router.get(
+  "/manage/:id",
+  authMiddleware,
+  roleMiddleware("admin"),
+  getExpoById
+);
+
+// Public: Get published Expos only
+router.get("/", getAllExpos);
+
+// Public: Get published Expo details only
+router.get("/:id", getExpoById);
+
+// Admin: Create Expo
 router.post(
   "/",
   authMiddleware,
@@ -21,22 +43,7 @@ router.post(
   createExpo
 );
 
-// Get All Expos (Authenticated users)
-router.get(
-  "/",
-  authMiddleware,
-  getAllExpos
-);
-
-
-// Get Single Expo (Authenticated users)
-router.get(
-  "/:id",
-  authMiddleware,
-  getExpoById
-);
-
-// Update Expo (Admin only)
+// Admin: Update Expo
 router.put(
   "/:id",
   authMiddleware,
@@ -44,7 +51,7 @@ router.put(
   updateExpo
 );
 
-// Delete Expo (Admin only)
+// Admin: Delete Expo
 router.delete(
   "/:id",
   authMiddleware,
