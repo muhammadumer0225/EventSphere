@@ -8,6 +8,7 @@ const {
   getExpoById,
   updateExpo,
   deleteExpo,
+  updateExpoFloorPlan,
 } = require("../controllers/expoController");
 
 const { authMiddleware } = require("../middleware/authMiddleware");
@@ -49,6 +50,14 @@ router.put(
   authMiddleware,
   roleMiddleware("admin"),
   updateExpo
+);
+
+// Update Expo Floor Plan (Admin Only)
+router.put(
+  "/:id/floor-plan",
+  authMiddleware,
+  roleMiddleware("admin"),
+  updateExpoFloorPlan
 );
 
 // Admin: Delete Expo

@@ -446,6 +446,76 @@ const updateExpo = async (req, res) => {
   }
 };
 
+
+// UPDATE EXPO FLOOR PLAN — Admin only
+const updateExpoFloorPlan = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { width, height, backgroundImage } = req.body;
+
+    // Validate Expo ID
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Expo ID",
+      });
+    }
+
+    // Validate width and height
+    if (
+      !Number.isFinite(width) ||
+      !Number.isFinite(height) ||
+      width < 1 ||
+      height < 1
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid floor plan width and height are required",
+      });
+    }
+
+    // Validate background image
+    if (
+      backgroundImage !== undefined &&
+      typeof backgroundImage !== "string"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Background image must be a string",
+      });
+    }
+
+    const expo = await Expo.findById(id);
+
+    if (!expo) {
+      return res.status(404).json({
+        success: false,
+        message: "Expo not found",
+      });
+    }
+
+    // Save floor plan settings
+    expo.floorPlan = {
+      width,
+      height,
+      backgroundImage:
+        backgroundImage ?? expo.floorPlan?.backgroundImage ?? "",
+    };
+
+    await expo.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Expo floor plan updated successfully",
+      floorPlan: expo.floorPlan,
+    });
+
+  } catch (error) {
+    return handleError(res, error);
+  }
+};
+
+
 // DELETE EXPO — Admin only
 const deleteExpo = async (req, res) => {
   try {
@@ -482,4 +552,5 @@ module.exports = {
   getExpoById,
   updateExpo,
   deleteExpo,
+  updateExpoFloorPlan,
 };
