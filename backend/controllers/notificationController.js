@@ -58,7 +58,7 @@ const markNotificationAsRead = async (req, res) => {
         },
       },
       {
-        new: true,
+        returnDocument: "after",
       }
     );
 

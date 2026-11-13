@@ -6,7 +6,7 @@ const Expo = require("../models/Expo");
 // Create Booth
 const createBooth = async (req, res) => {
   try {
-    const { expo, boothNumber, size, price } = req.body;
+    const { expo, boothNumber, size, price, position } = req.body;
 
     if (!expo || !boothNumber || !size || price === undefined) {
       return res.status(400).json({
@@ -24,18 +24,26 @@ const createBooth = async (req, res) => {
       });
     }
 
-    const booth = await Booth.create({
-      expo,
-      boothNumber,
-      size,
-      price,
-    });
+    const boothData = {
+  expo,
+  boothNumber,
+  size,
+  price,
+};
+
+// Add position only when provided
+if (position !== undefined) {
+  boothData.position = position;
+}
+
+const booth = await Booth.create(boothData);
 
     res.status(201).json({
       success: true,
       message: "Booth created successfully",
       booth,
     });
+
   } catch (error) {
     if (error.code === 11000) {
     return res.status(409).json({
@@ -70,7 +78,10 @@ if (req.query.expo) {
   filter.expo = req.query.expo;
 }
 
-const booths = await Booth.find(filter).populate("expo");
+const booths = await Booth.find(filter).populate(
+  "expo",
+  "title category startDate endDate"
+);
 
     res.status(200).json({
       success: true,
@@ -106,6 +117,59 @@ const getMyReservations = async (req, res) => {
   }
 };
 
+
+// Get Expo Floor Plan
+const getExpoFloorPlan = async (req, res) => {
+  try {
+    const { expoId } = req.params;
+
+    // Validate Expo ID
+    if (!mongoose.isValidObjectId(expoId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Expo ID",
+      });
+    }
+
+    // Find published Expo
+    const expo = await Expo.findOne({
+      _id: expoId,
+      status: "published",
+    }).select("title category location startDate endDate floorPlan");
+
+    if (!expo) {
+      return res.status(404).json({
+        success: false,
+        message: "Published Expo not found",
+      });
+    }
+
+    // Get all booths of this Expo
+    const booths = await Booth.find({
+      expo: expoId,
+    })
+      .select("boothNumber size price status exhibitor position")
+      .populate("exhibitor", "name")
+      .sort({ boothNumber: 1 });
+
+    return res.status(200).json({
+      success: true,
+      message: "Expo floor plan fetched successfully",
+      expo,
+      floorPlan: expo.floorPlan || null,
+      count: booths.length,
+      booths,
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong",
+    });
+  }
+};
+
+
 // Get Single Booth
 const getBoothById = async (req, res) => {
   try {
@@ -118,7 +182,10 @@ const getBoothById = async (req, res) => {
       });
     }
 
-    const booth = await Booth.findById(id).populate("expo");
+    const booth = await Booth.findById(id).populate(
+  "expo",
+  "title category startDate endDate"
+);
 
     if (!booth) {
       return res.status(404).json({
@@ -151,21 +218,25 @@ const updateBooth = async (req, res) => {
       });
     }
 
-    const { boothNumber, size, price, status, exhibitor } = req.body;
+    const { boothNumber, size, price, status, exhibitor, position } = req.body;
 
     const updateData = {
-      boothNumber,
-      size,
-      price,
-      status,
-      exhibitor,
-    };
+  boothNumber,
+  size,
+  price,
+  status,
+  exhibitor,
+};
+
+if (position !== undefined) {
+  updateData.position = position;
+}
 
     const booth = await Booth.findByIdAndUpdate(
       id,
       updateData,
       {
-        new: true,
+        returnDocument: true,
         runValidators: true,
       }
     );
@@ -258,7 +329,7 @@ const reserveBooth = async (req, res) => {
         exhibitor: req.user.id,
       },
       {
-        new: true,
+        returnDocument: "after",
         runValidators: true,
       }
     );
@@ -282,4 +353,4 @@ const reserveBooth = async (req, res) => {
     });
   }
 };
-module.exports = { createBooth, getAllBooths, getBoothById, updateBooth, deleteBooth, reserveBooth, getMyReservations };
+module.exports = { createBooth, getAllBooths, getBoothById, updateBooth, deleteBooth, reserveBooth, getMyReservations, getExpoFloorPlan };

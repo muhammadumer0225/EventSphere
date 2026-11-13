@@ -134,7 +134,7 @@ const updateMyExhibitorProfile = async (req, res) => {
       { user: req.user.id },
       { $set: updates },
       {
-        new: true,
+        returnDocument: "after",
         runValidators: true,
       }
     );
