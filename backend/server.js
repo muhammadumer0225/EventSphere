@@ -12,6 +12,8 @@ const imageRoutes = require("./routes/imageRoutes");
 const exhibitorRoutes = require("./routes/exhibitorRoutes");
 const applicationRoutes = require("./routes/applicationRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const speakerRoutes = require("./routes/speakerRoutes");
+const sessionRoutes = require("./routes/sessionRoutes");
 const app = express();
 
 // 1. CORS Middleware
@@ -45,10 +47,17 @@ app.use("/api", applicationRoutes);
 // 9. Notification Routes
 app.use("/api/notifications", notificationRoutes);
 
+// Speaker Management Routes
+app.use("/api/speakers", speakerRoutes);
+
+// Session Management Routes
+app.use("/api/sessions", sessionRoutes);
+
 // Serve uploaded images
 app.use(
   "/uploads",
   express.static(path.join(__dirname, "uploads"))
+
 );
 
 
