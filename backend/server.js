@@ -17,6 +17,7 @@ const sessionRoutes = require("./routes/sessionRoutes");
 const expoRegistrationRoutes = require("./routes/expoRegistrationRoutes");
 const sessionRegistrationRoutes = require("./routes/sessionRegistrationRoutes");
 const attendeeRoutes = require("./routes/attendeeRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
 const app = express();
 
 // 1. CORS Middleware
@@ -64,6 +65,9 @@ app.use("/api/session-registrations", sessionRegistrationRoutes);
 
 //14. GetAllFetch Route
 app.use("/api/attendees", attendeeRoutes);
+
+//15. GetAnalytics Route
+app.use("/api/analytics", analyticsRoutes);
 
 // Serve uploaded images
 app.use(
