@@ -18,6 +18,8 @@ const expoRegistrationRoutes = require("./routes/expoRegistrationRoutes");
 const sessionRegistrationRoutes = require("./routes/sessionRegistrationRoutes");
 const attendeeRoutes = require("./routes/attendeeRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
+const announcementRoutes = require("./routes/announcementRoutes");
+const feedbackRoutes = require("./routes/feedbackRoutes");
 const app = express();
 
 // 1. CORS Middleware
@@ -68,6 +70,12 @@ app.use("/api/attendees", attendeeRoutes);
 
 //15. GetAnalytics Route
 app.use("/api/analytics", analyticsRoutes);
+
+//16. Announcement Route
+app.use("/api/announcements", announcementRoutes);
+
+//17. Feedbcak Route
+app.use("/api/feedback", feedbackRoutes);
 
 // Serve uploaded images
 app.use(
